@@ -1,14 +1,14 @@
 'use strict'
 
 const rule = require('../../../lib/rules/no-debug')
-const RuleTester = require('eslint').RuleTester
+const tsParser = require('@typescript-eslint/parser')
+const { RuleTester } = require('@typescript-eslint/rule-tester')
 
 const ruleTester = new RuleTester()
 
 const errors = [{ messageId: 'unexpected' }]
 
-ruleTester.run('no-debug', rule, {
-
+const tests = {
   valid: [
     { code: 'debug()' },
     { code: 'cy.get(\'button\').dblclick()' },
@@ -20,4 +20,47 @@ ruleTester.run('no-debug', rule, {
     { code: 'cy.get(\'button\').debug()', errors },
     { code: 'cy.get(\'a\').should(\'have.attr\', \'href\').and(\'match\', /dashboard/).debug()', errors },
   ],
+}
+
+const typedTests = {
+  valid: [
+    ...tests.valid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getButton() {
+          return cy.get("button")
+        }
+        getButton().click()
+      `,
+    },
+  ],
+  invalid: [
+    ...tests.invalid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getButton() {
+          return cy.get("button")
+        }
+        getButton().debug()
+      `,
+      errors,
+    },
+  ],
+}
+
+ruleTester.run('no-debug', rule, tests)
+
+const typedRuleTester = new RuleTester({
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      projectService: {
+        allowDefaultProject: ['*.ts'],
+      },
+    },
+  },
 })
+
+typedRuleTester.run('no-debug', rule, typedTests)
