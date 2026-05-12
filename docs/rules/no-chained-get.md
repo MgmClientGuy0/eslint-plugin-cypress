@@ -19,3 +19,15 @@ Examples of **correct** code for this rule:
 ```js
 cy.get('parent').find('child')
 ```
+
+## Typed Linting
+
+If [Typed Linting](../../README.md#typed-linting) is enabled, this rule also catches chained `.get()` calls when the Cypress chain was started from a helper function.
+
+```js
+function getContainer() {
+	return cy.get('container')
+}
+
+getContainer().get('parent').get('child')
+```

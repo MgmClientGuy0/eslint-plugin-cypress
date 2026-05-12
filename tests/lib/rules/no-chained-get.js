@@ -8,15 +8,17 @@
 // Requirements
 // ------------------------------------------------------------------------------
 
-const rule = require('../../../lib/rules/no-chained-get'),
-  RuleTester = require('eslint').RuleTester
+const rule = require('../../../lib/rules/no-chained-get')
+const tsParser = require('@typescript-eslint/parser')
+const { RuleTester } = require('@typescript-eslint/rule-tester')
 
 // ------------------------------------------------------------------------------
 // Tests
 // ------------------------------------------------------------------------------
 
 const ruleTester = new RuleTester()
-ruleTester.run('no-chained-get', rule, {
+
+const tests = {
   valid: [
     { code: 'cy.get(\'div\')' },
     { code: 'cy.get(\'.div\').find().get()' },
@@ -28,4 +30,47 @@ ruleTester.run('no-chained-get', rule, {
       errors: [{ messageId: 'unexpected' }],
     },
   ],
+}
+
+const typedTests = {
+  valid: [
+    ...tests.valid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getContainer() {
+          return cy.get("container")
+        }
+        getContainer().get("parent").find("child")
+      `,
+    },
+  ],
+  invalid: [
+    ...tests.invalid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getContainer() {
+          return cy.get("container")
+        }
+        getContainer().get("parent").get("child")
+      `,
+      errors: [{ messageId: 'unexpected' }],
+    },
+  ],
+}
+
+ruleTester.run('no-chained-get', rule, tests)
+
+const typedRuleTester = new RuleTester({
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      projectService: {
+        allowDefaultProject: ['*.ts'],
+      },
+    },
+  },
 })
+
+typedRuleTester.run('no-chained-get', rule, typedTests)
