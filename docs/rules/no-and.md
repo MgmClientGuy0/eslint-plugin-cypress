@@ -29,6 +29,18 @@ cy.contains('Login').and('be.visible')
 cy.get('foo').should('be.visible').and('have.text', 'bar').and('have.class', 'active')
 ```
 
+## Typed Linting
+
+If [Typed Linting](../../README.md#typed-linting) is enabled, this rule catches assertions starting with `.and()` when the Cypress chain was started from a helper function.
+
+```js
+function getFoo() {
+	return cy.get('foo')
+}
+
+getFoo().and('be.visible')
+```
+
 ## When Not To Use It
 
 If you prefer using `.and()` interchangeably with `.should()` in all positions, turn this rule off.

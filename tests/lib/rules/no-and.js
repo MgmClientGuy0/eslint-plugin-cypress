@@ -1,7 +1,8 @@
 'use strict'
 
-const rule = require('../../../lib/rules/no-and'),
-  RuleTester = require('eslint').RuleTester
+const rule = require('../../../lib/rules/no-and')
+const tsParser = require('@typescript-eslint/parser')
+const { RuleTester } = require('@typescript-eslint/rule-tester')
 
 const ruleTester = new RuleTester()
 const errors = [
@@ -11,7 +12,7 @@ const errors = [
   },
 ]
 
-ruleTester.run('no-and', rule, {
+const tests = {
   valid: [
     { code: 'cy.get(\'elem\').should(\'have.text\', \'blah\')' },
     { code: 'cy.get(\'foo\').should(\'be.visible\')' },
@@ -103,4 +104,54 @@ ruleTester.run('no-and', rule, {
       errors,
     },
   ],
+}
+
+const typedTests = {
+  valid: [
+    ...tests.valid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getFoo() {
+          return cy.get("foo")
+        }
+        getFoo().should("be.visible").and("have.text", "bar")
+      `,
+    },
+  ],
+  invalid: [
+    ...tests.invalid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getFoo() {
+          return cy.get("foo")
+        }
+        getFoo().and("be.visible")
+      `,
+      output: `
+        /// <reference types="cypress" />
+        function getFoo() {
+          return cy.get("foo")
+        }
+        getFoo().should("be.visible")
+      `,
+      errors,
+    },
+  ],
+}
+
+ruleTester.run('no-and', rule, tests)
+
+const typedRuleTester = new RuleTester({
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      projectService: {
+        allowDefaultProject: ['*.ts'],
+      },
+    },
+  },
 })
+
+typedRuleTester.run('no-and', rule, typedTests)
