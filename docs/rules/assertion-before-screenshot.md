@@ -26,3 +26,15 @@ cy.visit('myUrl')
 cy.get('[data-test-id="my-element"]').should('be.visible')
 cy.screenshot()
 ```
+
+## Typed Linting
+
+If [Typed Linting](../../README.md#typed-linting) is enabled, this rule also catches screenshots taken from Cypress chains started by a helper function.
+
+```js
+function getElement() {
+	return cy.get('.some-element')
+}
+
+getElement().click().screenshot()
+```

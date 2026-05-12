@@ -1,13 +1,14 @@
 'use strict'
 
 const rule = require('../../../lib/rules/assertion-before-screenshot')
-const RuleTester = require('eslint').RuleTester
+const tsParser = require('@typescript-eslint/parser')
+const { RuleTester } = require('@typescript-eslint/rule-tester')
 
 const ruleTester = new RuleTester()
 
 const errors = [{ messageId: 'unexpected' }]
 
-ruleTester.run('assertion-before-screenshot', rule, {
+const tests = {
   valid: [
     { code: 'cy.get(".some-element"); cy.screenshot();' },
     { code: 'cy.get(".some-element").should("exist").screenshot();' },
@@ -31,4 +32,47 @@ ruleTester.run('assertion-before-screenshot', rule, {
     { code: 'cy.get(".some-element"); function a() { cy.screenshot(); }', errors },
     { code: 'cy.get(".some-element"); const a = () => { cy.screenshot(); }', errors },
   ],
+}
+
+const typedTests = {
+  valid: [
+    ...tests.valid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getElement() {
+          return cy.get(".some-element")
+        }
+        getElement().should("exist").screenshot()
+      `,
+    },
+  ],
+  invalid: [
+    ...tests.invalid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getElement() {
+          return cy.get(".some-element")
+        }
+        getElement().click().screenshot()
+      `,
+      errors,
+    },
+  ],
+}
+
+ruleTester.run('assertion-before-screenshot', rule, tests)
+
+const typedRuleTester = new RuleTester({
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      projectService: {
+        allowDefaultProject: ['*.ts'],
+      },
+    },
+  },
 })
+
+typedRuleTester.run('assertion-before-screenshot', rule, typedTests)
