@@ -1,14 +1,14 @@
 'use strict'
 
 const rule = require('../../../lib/rules/no-pause')
-const RuleTester = require('eslint').RuleTester
+const tsParser = require('@typescript-eslint/parser')
+const { RuleTester } = require('@typescript-eslint/rule-tester')
 
 const ruleTester = new RuleTester()
 
 const errors = [{ messageId: 'unexpected' }]
 
-ruleTester.run('no-pause', rule, {
-
+const tests = {
   valid: [
     { code: 'pause()' },
     { code: 'cy.get(\'button\').dblclick()' },
@@ -20,4 +20,47 @@ ruleTester.run('no-pause', rule, {
     { code: 'cy.get(\'button\').pause()', errors },
     { code: 'cy.get(\'a\').should(\'have.attr\', \'href\').and(\'match\', /dashboard/).pause()', errors },
   ],
+}
+
+const typedTests = {
+  valid: [
+    ...tests.valid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getButton() {
+          return cy.get("button")
+        }
+        getButton().click()
+      `,
+    },
+  ],
+  invalid: [
+    ...tests.invalid,
+    {
+      code: `
+        /// <reference types="cypress" />
+        function getButton() {
+          return cy.get("button")
+        }
+        getButton().pause()
+      `,
+      errors,
+    },
+  ],
+}
+
+ruleTester.run('no-pause', rule, tests)
+
+const typedRuleTester = new RuleTester({
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      projectService: {
+        allowDefaultProject: ['*.ts'],
+      },
+    },
+  },
 })
+
+typedRuleTester.run('no-pause', rule, typedTests)

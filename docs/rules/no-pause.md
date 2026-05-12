@@ -20,3 +20,15 @@ Examples of **correct** code for this rule:
 ```js
 cy.get('selector')
 ```
+
+## Typed Linting
+
+If [Typed Linting](../../README.md#typed-linting) is enabled, this rule also catches `cy.pause()` calls when the Cypress chain was started from a helper function.
+
+```js
+function getButton() {
+	return cy.get('button')
+}
+
+getButton().pause()
+```
